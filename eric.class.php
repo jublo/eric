@@ -119,7 +119,7 @@ class Eric
                 $mime .= ";\n\tname=\"" . $attmFile[1] . "\"\n";
                 $mime .= "Content-Transfer-Encoding: base64\n";
                 if ($inline) {
-                    $mime .= "Content-ID: <" . $attmFile[1] . "@inline>\n";
+                    $mime .= "Content-ID: <" . $attmFile[1] . ">\n";
                     $mime .= "Content-Disposition: inline;\n\tfilename=\"" . $attmFile[1] .
                         "\"";
                 }
