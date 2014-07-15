@@ -1,79 +1,134 @@
 <?php
 
 /**
- * Eric
+ * The easy way to send MIME mails with PHP.
  *
- * @package eric
- * @author jublonet
- * @link https://github.com/jublonet/eric
- * @copyright 2011
- * @access public
+ * @package   eric
+ * @version   1.1.0-dev
+ * @author    Jublo Solutions <support@jublo.net>
+ * @copyright 2011-2014 Jublo Solutions <support@jublo.net>
+ * @license   http://opensource.org/licenses/GPL-3.0 GNU General Public License 3.0
+ * @link      https://github.com/jublonet/eric
  */
 class Eric
 {
     /**
-     * This sends out an e-mail to the given address with the given content.
+     * MIME types safe to attach to an e-mail
      */
-    static public function send_mail($to, $subject, $message, $content, $from, $from_name,
-        $files = null, $moreheaders = array())
-    {
-        $OB = "0016e6dee7844eeb220498298a17";
-        $IB = "0016e6dee7844eeb1c0498298a15";
+    static protected $_mime = array(
+        'csv'  => 'text/comma-separated-values',
+        'doc'  => 'application/msword',
+        'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'gif'  => 'image/gif',
+        'htm'  => 'text/html',
+        'html' => 'text/html',
+        'jpeg' => 'image/jpeg',
+        'jpg'  => 'image/jpeg',
+        'mp3'  => 'audio/mpeg3'
+        'pdf'  => 'application/pdf',
+        'png'  => 'image/png',
+        'pps'  => 'application/vnd.ms-powerpoint',
+        'ppsx' => 'application/vnd.openxmlformats-officedocument.presentationml.slideshow',
+        'ppt'  => 'application/vnd.ms-powerpoint',
+        'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'rtf'  => 'text/rtf',
+        'tif'  => 'image/tiff',
+        'tiff' => 'image/tiff',
+        'txt'  => 'text/plain',
+        'xls'  => 'application/msexcel',
+        'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'zip'  => 'application/zip'
+    );
 
-        // Get some settings
-        $name = $from_name;
-        $returnPath = $from;
+    /**
+     * Extensions sure to be blocked by e-mail clients like Outlook
+     * (taken from Outlook 2010 list)
+     */
+    static protected $_block = explode(
+        ' ',
+        'ade adp app asp bas bat cer chm cmd cnt com cpl crt csh der exe fxp grp '
+        . 'hlp hpj hta inf ins isp its jar js jse ksh lnk mad maf mag mam maq mar '
+        . 'mas mat mau mav maw mcf mda mdb mde mdt mdw mdz msc msh msi msp mst '
+        . 'ops osd pcd pif pl plg prf prg ps1 ps2 pst reg scf scr sct shb shs tmp '
+        . 'url vb vbe vbp vbs vsw ws wsc wsf wsh xnk'
+    );
 
-        // Prepare headers
-        $headers = array();
-        $headers['Reply-To'] = $from;
-        $headers['Return-Path'] = $returnPath;
-        $headers['Subject'] = trim($subject);
-        $headers['MIME-Version'] = '1.0';
-        $headers['Content-Transfer-Encoding'] = '8bit';
-        $headers['Content-Type'] = 'multipart/mixed; boundary=' . $OB;
-        $headers['Message-ID'] = '<' . sha1(time()) . '@' . str_replace('www.',
-            '', $_SERVER['HTTP_HOST']) . '>';
-        $headers['X-Mailer'] = 'jublonet/eric';
+    /**
+     * Send out an e-mail to the given address with the given content
+     */
+    static public function send_mail($to, $subject, $content, $content_is_html,
+        $from, $from_name, $files = null, $moreheaders = array()
+    ) {
+        // boundaries
+        $outer = '0016e6dee7844eeb220498298a17';
+        $inner = '0016e6dee7844eeb1c0498298a15';
+
+        // Prepare default headers
+        $message_id = '<'
+            . sha1(time()) . '@'
+            . str_replace('www.', '', $_SERVER['HTTP_HOST'])
+            . '>';
+
+        $headers = array(
+            'Reply-To'                  => $from,
+            'Return-Path'               => $from,
+            'Subject'                   => trim($subject),
+            'MIME-Version'              => '1.0',
+            'Content-Transfer-Encoding' => '8bit',
+            'Content-Type'              => 'multipart/mixed; boundary=' . $outer,
+            'Message-ID'                => $message_id,
+            'X-Mailer'                  => 'jublonet/eric',
+        );
+        // if running as non-cli, append URI
         if (isset($_SERVER['REQUEST_URI'])) {
-            $strScript = $_SERVER['REQUEST_URI'];
-            // dont send out secret parameters etc.
-            if (strpos($strScript, '?') !== false) {
-                $strScript = reset(explode('?', $strScript));
+            $script = $_SERVER['REQUEST_URI'];
+            // don't send out secret parameters etc.
+            if (strpos($script, '?') !== false) {
+                $script = reset(explode('?', $script));
             }
-            $headers['X-Mailer-Script'] = $strScript;
+            $headers['X-Mailer-Script'] = $script;
         }
-        $headers = array_merge($moreheaders, $headers);
+        // merge custom headers to use
+        $headers = array_merge($headers, $moreheaders);
 
-        // Encode headers
+        // get return path
+        $return_path = $headers['Return-Path'];
+
+        // encode headers
         $headers = self::encodeHeaders($headers);
-        $headers['From'] = utf8_decode($name) . ' <' . $from . '>';
+        $headers['From'] = '=?utf-8?B?'
+            . base64_encode($from_name)
+            . '?= <' . $from . '>';
 
-        // Get Subject
+        // get Subject (now encoded)
         $subject = $headers['Subject'];
         unset($headers['Subject']);
 
-        // Collapse headers into string
+        // collapse headers into string
         $headers = implode_assoc(': ', "\n", $headers);
 
-        // Reformat message
-        $message = str_replace("\r\n", "\n", $message);
-        $message = wordwrap($message, 75);
+        // convert CRLF to LF, wrap to 75 characters per line
+        $content = str_replace("\r\n", "\n", $content);
+        $content = wordwrap($content, 75);
 
-        $mime = '--' . $OB . "\n";
-        $mime .= 'Content-Type: multipart/alternative; boundary=' . $IB . "\n\n";
+        // start building the MIME
+        $mime  = '--' . $outer . "\n";
+        $mime .= 'Content-Type: multipart/alternative; boundary=' . $inner . "\n\n";
 
         // plaintext section
-        $mime .= '--' . $IB . "\n";
+        $mime .= '--' . $inner . "\n";
         $mime .= "Content-Type: text/plain; charset=\"utf-8\"\n";
         $mime .= "Content-Transfer-Encoding: 8bit\n\n";
+
         // plaintext goes here
-        $messagetext = $message;
-        if ($content) {
+        $messagetext = $content;
+        if ($content_is_html) {
             // remove style section first
             $messagetext = preg_replace('/<style[^>]+>[^<]+<\/style>/', '', $messagetext);
+
             // remove tags
             $messagetext = strip_tags($messagetext);
+
             // remove multiple empty lines
             $messagetext = preg_replace('/(\n)[ \t]+(\r?\n)/', '$1$2', $messagetext);
             $messagetext = preg_replace('/(\r?\n){3,}/', '$1$1', $messagetext);
@@ -81,82 +136,109 @@ class Eric
         $mime .= $messagetext . "\n\n";
 
         // html section
-        $mime .= "\n--" . $IB . "\n";
+        $mime .= "\n--" . $inner . "\n";
         $mime .= "Content-Type: text/html; charset=\"utf-8\"\n";
         $mime .= "Content-Transfer-Encoding: 8bit\n\n";
 
         // html goes here
-        $messagehtml = $message;
-        if (!$content) {
+        $messagehtml = $content;
+        if (! $content_is_html) {
             // format the text-only properly for HTML
-            $messagehtml = nl2br(htmlentities(utf8_decode($messagehtml)));
+            $messagehtml = nl2br(htmlspecialchars($messagehtml));
         }
         $mime .= $messagehtml . "\n";
-        $mime .= "\n--" . $IB . "--\n";
+        $mime .= "\n--" . $inner . "--\n";
 
         // add attachments
         if ($files !== null) {
 
             // for each attachment
-            foreach ($files as $attmFile) {
+            foreach ($files as $file) {
+
+                // check if file exists
+                if (! file_exists($file)) {
+                    trigger_error(
+                        'The e-mail attachment ' . $file[1]
+                        . ' does not exist.',
+                        E_USER_ERROR
+                    );
+                }
 
                 $inline = 0;
                 // embed files in html using optional third array parameter
-                if (count($attmFile) > 2 && $attmFile[2]) {
+                if (count($file) > 2 && $file[2]) {
                     $inline = 1;
                 }
-                $patharray = explode("/", $attmFile[0]);
-                $fileName = $patharray[count($patharray) - 1];
+                $filename = basename($file[0]);
 
-                $mime .= "\n--" . $OB . "\n";
+                $mime .= "\n--" . $outer . "\n";
 
-                $mime .= "Content-Type: ";
-                if (substr($fileName, -3) == "gif") $mime .= "image/gif";
-                elseif (substr($fileName, -3) == "jpg") $mime .= "image/jpeg";
-                elseif (substr($fileName, -3) == "png") $mime .= "image/png";
-                else  $mime .= "application/octetstream";
+                // write correct MIME type
+                $mime .= 'Content-Type: ';
 
-                $mime .= ";\n\tname=\"" . $attmFile[1] . "\"\n";
-                $mime .= "Content-Transfer-Encoding: base64\n";
-                if ($inline) {
-                    $mime .= "Content-ID: <" . $attmFile[1] . ">\n";
-                    $mime .= "Content-Disposition: inline;\n\tfilename=\"" . $attmFile[1] .
-                        "\"";
+                // get extension, if any
+                $mime = 'application/octetstream';
+                $extension = strrpos($filename, '.');
+                if ($extension > -1) {
+                    $extension = strtolower(substr($filename, $extension + 1));
+
+                    // check for blocked extensions
+                    if (in_array($extension, self::$_blocked)) {
+                        trigger_error(
+                            'The e-mail attachment ' . $file[1]
+                            . ' will be blocked by e-mail clients.',
+                            E_USER_WARNING
+                        );
+                    }
+
+                    if (in_array($extension, array_keys(self::$_mime))) {
+                        $mime = self::$_mime[$extension];
+                    }
                 }
-                else {
+
+                $mime .= ";\n\tname=\"" . $file[1] . "\"\n";
+                $mime .= "Content-Transfer-Encoding: base64\n";
+
+                if ($inline) {
+
+                    // add inline content ID
+                    $mime .= "Content-ID: <" . $file[1] . ">\n";
+                    $mime .= "Content-Disposition: inline;\n\tfilename=\"" . $file[1] .
+                        "\"";
+                } else {
+
+                    // add attachment name
                     $mime .= "Content-Disposition: attachment;\n\tfilename=\"" .
-                        $attmFile[1] . "\"";
+                        $file[1] . "\"";
                 }
 
                 $mime .= "\n\n";
 
                 // file goes here
-                $fd = @fopen($attmFile[0], "r");
-                $fileContent = "";
-
-                while (!feof($fd)) {
-                    $fileContent .= fgets($fd, 1024);
-                }
-
-                @fclose($fd);
+                $data = @file_get_contents($file[0]);
 
                 // encode the contents
-                $fileContent = chunk_split(base64_encode($fileContent));
+                $data = chunk_split(base64_encode($data));
 
                 // add it to the message
-                $mime .= $fileContent;
+                $mime .= $data;
                 $mime .= "\n\n";
 
             }
         }
 
         // message ends
-        $mime .= "\n--" . $OB . "--\n";
+        $mime .= "\n--" . $outer . "--\n";
 
-        if (!mail($to, $subject, $mime, $headers, '-f' . $returnPath)) {
-            mail($returnPath, 'Not delivered: ' . $subject,
+        $result = mail($to, $subject, $mime, $headers, '-f' . $return_path);
+
+        // on failure, send bounce
+        if ($result !== true) {
+            mail(
+                $return_path, 'Not delivered: ' . $subject,
                 "The following message was not delivered to $to:\r\n\r\n$text",
-                $headers);
+                $headers
+            );
         }
     }
 
@@ -266,7 +348,7 @@ class Eric
     }
 }
 
-if (!function_exists('implode_assoc')) {
+if (! function_exists('implode_assoc')) {
     /**
      * Implode an associative array.
      *
