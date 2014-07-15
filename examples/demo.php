@@ -45,5 +45,5 @@ $arrFiles[] = array(dirname(__file__) . '/../demo-data/demo.png', 'demo.png', tr
 Eric::send_mail($to = 'to@example.com', $subject =
     'Test message with inline image', $content =
     'A mail with attachment. <br /> <img src="cid:demo.png" width="100" height="45" alt="Demo image" />',
-    $html = false, $from = 'sender@example.com', $from_name = 'Sender name', $files =
+    $html = true, $from = 'sender@example.com', $from_name = 'Sender name', $files =
     $arrFiles);
