@@ -67,9 +67,14 @@ class Eric
         $inner = '0016e6dee7844eeb1c0498298a15';
 
         // Prepare default headers
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $hostname = $_SERVER['HTTP_HOST'];
+        } else {
+            $hostname = trim(`hostname`);
+        }
         $message_id = '<'
             . sha1(time()) . '@'
-            . str_replace('www.', '', $_SERVER['HTTP_HOST'])
+            . str_replace('www.', '', $hostname)
             . '>';
 
         $headers = array(
@@ -239,7 +244,7 @@ class Eric
         if ($result !== true) {
             mail(
                 $return_path, 'Not delivered: ' . $subject,
-                "The following message was not delivered to $to:\r\n\r\n$text",
+                "The following message was not delivered to $to:\r\n\r\n$mime",
                 $headers
             );
         }
