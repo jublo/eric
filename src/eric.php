@@ -24,7 +24,7 @@ class Eric
         'html' => 'text/html',
         'jpeg' => 'image/jpeg',
         'jpg'  => 'image/jpeg',
-        'mp3'  => 'audio/mpeg3'
+        'mp3'  => 'audio/mpeg3',
         'pdf'  => 'application/pdf',
         'png'  => 'image/png',
         'pps'  => 'application/vnd.ms-powerpoint',
