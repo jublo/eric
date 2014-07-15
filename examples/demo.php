@@ -11,7 +11,7 @@
  */
 
 // include Eric class
-require_once dirname(__file__) . '/eric.class.php';
+require_once dirname(__file__) . '/../src/eric.php';
 
 // the mail content should be in UTF-8
 
@@ -40,7 +40,7 @@ Eric::send_mail($to = 'to@example.com', $subject = 'Test message with attm', $co
 
 $arrFiles = array();
 $arrFiles[] = array(__file__, 'demo.php.txt', false);
-$arrFiles[] = array(dirname(__file__) . '/demo.png', 'demo.png', true); // third parameter = inline
+$arrFiles[] = array(dirname(__file__) . '/../demo-data/demo.png', 'demo.png', true); // third parameter = inline
 
 Eric::send_mail($to = 'to@example.com', $subject =
     'Test message with inline image', $content =
