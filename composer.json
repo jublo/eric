@@ -1,0 +1,40 @@
+{
+    "name": "jublonet/eric",
+    "description" : "The easy way to send MIME mails with PHP.",
+    "keywords": [
+        "email",
+        "mail",
+        "MIME",
+        "send",
+        "attachments",
+        "messages",
+        "communication"
+    ],
+    "homepage": "http://www.jublo.net/projects/eric",
+    "license": "GPL-3.0+",
+    "authors": [
+        {
+            "name": "Joshua Atkins",
+            "email": "joshua.atkins@jublo.net",
+            "homepage": "http://atkins.im/",
+            "role": "Developer"
+        },
+        {
+            "name": "J.M.",
+            "email": "jm@jublo.net",
+            "homepage": "http://mynetx.net/",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "email": "support@jublo.net",
+        "issues": "https://github.com/jublonet/eric/issues",
+        "source": "https://github.com/jublonet/eric/releases"
+    },
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "autoload": {
+        "classmap": ["src/"]
+    }
+}
