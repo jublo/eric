@@ -3,11 +3,12 @@
 /**
  * Eric demo file
  *
- * @package eric
- * @author jublonet
- * @link https://github.com/jublonet/eric
- * @copyright 2011
- * @access public
+ * @package   eric
+ * @version   1.1.0-dev
+ * @author    Jublo Solutions <support@jublo.net>
+ * @copyright 2011-2014 Jublo Solutions <support@jublo.net>
+ * @license   http://opensource.org/licenses/GPL-3.0 GNU General Public License 3.0
+ * @link      https://github.com/jublonet/eric
  */
 
 // include Eric class
