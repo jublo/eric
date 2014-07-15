@@ -44,13 +44,16 @@ class Eric
      * Extensions sure to be blocked by e-mail clients like Outlook
      * (taken from Outlook 2010 list)
      */
-    static protected $_block = explode(
-        ' ',
-        'ade adp app asp bas bat cer chm cmd cnt com cpl crt csh der exe fxp grp '
-        . 'hlp hpj hta inf ins isp its jar js jse ksh lnk mad maf mag mam maq mar '
-        . 'mas mat mau mav maw mcf mda mdb mde mdt mdw mdz msc msh msi msp mst '
-        . 'ops osd pcd pif pl plg prf prg ps1 ps2 pst reg scf scr sct shb shs tmp '
-        . 'url vb vbe vbp vbs vsw ws wsc wsf wsh xnk'
+    static protected $_block = array(
+        'ade', 'adp', 'app', 'asp', 'bas', 'bat', 'cer', 'chm', 'cmd', 'cnt',
+        'com', 'cpl', 'crt', 'csh', 'der', 'exe', 'fxp', 'grp', 'hlp', 'hpj',
+        'hta', 'inf', 'ins', 'isp', 'its', 'jar', 'js', 'jse', 'ksh', 'lnk',
+        'mad', 'maf', 'mag', 'mam', 'maq', 'mar', 'mas', 'mat', 'mau', 'mav',
+        'maw', 'mcf', 'mda', 'mdb', 'mde', 'mdt', 'mdw', 'mdz', 'msc', 'msh',
+        'msi', 'msp', 'mst', 'ops', 'osd', 'pcd', 'pif', 'pl', 'plg', 'prf',
+        'prg', 'ps1', 'ps2', 'pst', 'reg', 'scf', 'scr', 'sct', 'shb', 'shs',
+        'tmp', 'url', 'vb', 'vbe', 'vbp', 'vbs', 'vsw', 'ws', 'wsc', 'wsf',
+        'wsh', 'xnk'
     );
 
     /**
